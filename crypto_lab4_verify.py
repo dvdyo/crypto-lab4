@@ -254,7 +254,7 @@ if __name__ == "__main__":
     
     # 1. Get Server Key
     try:
-        server_pub_key = get_server_key(key_size=256) # (e, n)
+        server_pub_key = get_server_key(key_size=512) # (e, n)
         print(f"Server Key obtained. Modulus length: {server_pub_key[1].bit_length()} bits")
     except Exception as e:
         print(f"Failed to reach server: {e}")
@@ -262,9 +262,9 @@ if __name__ == "__main__":
         
     # 2. Generate Our Keys
     # Important: Our modulus (n) should be <= Server modulus (n1) for the SendKey protocol.
-    # Since the server provides a 256-bit key, we will generate approximately the same size.
-    print("Generating local keys (approx 256 bit modulus)...")
-    (p, q), _ = generate_two_prime_pairs(bits=128) # 128*2 = 256 bit modulus
+    # Since the server provides a 512-bit key, we will generate approximately the same size.
+    print("Generating local keys (approx 512 bit modulus)...")
+    (p, q), _ = generate_two_prime_pairs(bits=256) # 256*2 = 512 bit modulus
     
     my_pub_key, my_priv_key = GenerateKeyPair(p, q)
     print(f"Local Key generated. Modulus length: {my_pub_key[1].bit_length()} bits")
