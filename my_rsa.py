@@ -2,13 +2,13 @@ import random
 import math
 
 # =============================================================================
-# 1. Math Helpers (The "Engine")
+# 1. math helpers (the "engine")
 # =============================================================================
 
 def horner_pow(base, exp, mod):
     """
-    Manual implementation of modular exponentiation using Horner's scheme
-    (Square and Multiply).
+    manual implementation of modular exponentiation using horner's scheme
+    (square and multiply).
     """
     res = 1
     base %= mod
@@ -20,7 +20,7 @@ def horner_pow(base, exp, mod):
     return res
 
 def egcd(a, b):
-    """Extended Euclidean Algorithm."""
+    """extended euclidean algorithm."""
     if b == 0:
         return a, 1, 0
     g, x1, y1 = egcd(b, a % b)
@@ -29,18 +29,18 @@ def egcd(a, b):
     return g, x, y
 
 def modinv(a, m):
-    """Calculates modular inverse: a^-1 mod m."""
+    """calculates modular inverse: a^-1 mod m."""
     g, x, _ = egcd(a, m)
     if g != 1:
         raise ValueError("Inverse does not exist")
     return x % m
 
 # =============================================================================
-# 2. Prime Generation (Miller-Rabin)
+# 2. prime generation (miller-rabin)
 # =============================================================================
 
 def sieve_of_eratosthenes(limit):
-    """Generates a list of primes up to 'limit'."""
+    """generates a list of primes up to 'limit'."""
     is_prime = [True] * (limit + 1)
     p = 2
     while (p * p <= limit):
@@ -50,14 +50,14 @@ def sieve_of_eratosthenes(limit):
         p += 1
     return [p for p in range(2, limit + 1) if is_prime[p]]
 
-# Pre-compute small primes for trial division (optimization)
-# Filtering up to 1000 removes ~90% of composites cheaply.
+# pre-compute small primes for trial division (optimization)
+# filtering up to 1000 removes ~90% of composites cheaply.
 SMALL_PRIMES = sieve_of_eratosthenes(1000)
 
 def is_probable_prime(n, k=20):
-    """Miller-Rabin primality test."""
+    """miller-rabin primality test."""
     if n < 2: return False
-    # Trial division for speed
+    # trial division for speed
     for p in SMALL_PRIMES:
         if n == p: return True
         if n % p == 0: return False
@@ -86,24 +86,24 @@ def is_probable_prime(n, k=20):
     return True
 
 def generate_random_prime(bits):
-    """Generates a prime number of 'bits' length."""
+    """generates a prime number of 'bits' length."""
     n0 = 1 << (bits - 1)
     n1 = (1 << bits) - 1
     
     while True:
         x = random.randint(n0, n1)
-        # Ensure odd
+        # ensure odd
         if x % 2 == 0: x += 1
         
-        # Search sequence x, x+2, x+4...
+        # search sequence x, x+2, x+4...
         for m in range(x, n1 + 1, 2):
             if is_probable_prime(m):
                 return m
-        # If we reached end of interval, loop restarts with new random x
+        # if we reached end of interval, loop restarts with new random x
 
 def generate_two_prime_pairs(bits=256):
     """
-    Generates two pairs (p,q) and (p1,q1) such that n <= n1.
+    generates two pairs (p,q) and (p1,q1) such that n <= n1.
     """
     while True:
         p, q = generate_random_prime(bits), generate_random_prime(bits)
@@ -116,13 +116,13 @@ def generate_two_prime_pairs(bits=256):
             return (p, q), (p1, q1)
 
 # =============================================================================
-# 3. High-Level RSA Procedures (The Assignment)
+# 3. high-level rsa procedures (the assignment)
 # =============================================================================
 
 def GenerateKeyPair(p, q):
     """
-    Generates RSA keys from primes p and q.
-    Returns: ((e, n), (d, p, q))
+    generates rsa keys from primes p and q.
+    returns: ((e, n), (d, p, q))
     """
     if p == q: 
         raise ValueError("p and q must be different")
@@ -137,37 +137,37 @@ def GenerateKeyPair(p, q):
     return (e, n), (d, p, q)
 
 def Encrypt(message, public_key):
-    """C = M^e mod n"""
+    """c = m^e mod n"""
     e, n = public_key
     if not (0 <= message < n): 
         raise ValueError("Message too large")
     return horner_pow(message, e, n)
 
 def Decrypt(ciphertext, private_key):
-    """M = C^d mod n"""
+    """m = c^d mod n"""
     d, p, q = private_key
     return horner_pow(ciphertext, d, p * q)
 
 def Sign(message, private_key):
-    """S = M^d mod n (Mathematically same as Decrypt)"""
+    """s = m^d mod n (mathematically same as decrypt)"""
     d, p, q = private_key
     if not (0 <= message < p * q): 
         raise ValueError("Message too large")
     return horner_pow(message, d, p * q)
 
 def Verify(message, signature, public_key):
-    """Checks if M == S^e mod n"""
+    """checks if m == s^e mod n"""
     e, n = public_key
     return horner_pow(signature, e, n) == message
 
 def SendKey(k, receiver_pub, sender_priv):
     """
-    Protocol:
-    1. Sign k with My Priv -> S
-    2. Encrypt k with Their Pub -> k1
-    3. Encrypt S with Their Pub -> S1
+    protocol:
+    1. sign k with my priv -> s
+    2. encrypt k with their pub -> k1
+    3. encrypt s with their pub -> s1
     """
-    # Protocol constraint check
+    # protocol constraint check
     n_sender = sender_priv[1] * sender_priv[2]
     n_receiver = receiver_pub[1]
     if n_sender > n_receiver:
@@ -180,10 +180,10 @@ def SendKey(k, receiver_pub, sender_priv):
 
 def ReceiveKey(k1, S1, receiver_priv, sender_pub):
     """
-    Protocol:
-    1. Decrypt k1 -> k
-    2. Decrypt S1 -> S
-    3. Verify k vs S using Sender Pub
+    protocol:
+    1. decrypt k1 -> k
+    2. decrypt s1 -> s
+    3. verify k vs s using sender pub
     """
     k = Decrypt(k1, receiver_priv)
     S = Decrypt(S1, receiver_priv)
@@ -194,22 +194,22 @@ def ReceiveKey(k1, S1, receiver_priv, sender_pub):
         raise ValueError("Authentication Failed: Invalid Signature")
 
 # =============================================================================
-# 4. Text Utilities (Text <-> Int)
+# 4. text utilities (text <-> int)
 # =============================================================================
 
 def text_to_int(text):
-    """Converts a string to an integer."""
+    """converts a string to an integer."""
     return int.from_bytes(text.encode('utf-8'), 'big')
 
 def int_to_text(number):
-    """Converts an integer back to a string."""
-    # We need to calculate number of bytes. 
+    """converts an integer back to a string."""
+    # we need to calculate number of bytes. 
     # (number.bit_length() + 7) // 8 calculates the ceiling of division by 8
     num_bytes = (number.bit_length() + 7) // 8
     return number.to_bytes(num_bytes, 'big').decode('utf-8')
 
 # =============================================================================
-# Self-Check / Demo
+# self-check / demo
 # =============================================================================
 if __name__ == "__main__":
     print("=== RSA Student Lab Demo ===")
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     (p, q), _ = generate_two_prime_pairs(256)
     pub, priv = GenerateKeyPair(p, q)
     
-    # Example 1: Raw Integer (The Math)
+    # example 1: raw integer (the math)
     print("\n[1] Testing Raw Integer:")
     msg_int = 123456789
     cipher_int = Encrypt(msg_int, pub)
@@ -226,12 +226,12 @@ if __name__ == "__main__":
     print(f"  Decrypted: {decrypted_int}")
     assert msg_int == decrypted_int
     
-    # Example 2: Text Message (The App)
+    # example 2: text message (the app)
     print("\n[2] Testing Text Message:")
     message_str = "Hello, RSA!"
     print(f"  Original Text: '{message_str}'")
     
-    # Convert to Int -> Encrypt -> Decrypt -> Convert to Text
+    # convert to int -> encrypt -> decrypt -> convert to text
     m_int = text_to_int(message_str)
     print(f"  As Integer:    {m_int}")
     
