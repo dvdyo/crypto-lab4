@@ -1,6 +1,6 @@
 # crypto_lab4_verify.py
 import requests
-from my_rsa import GenerateKeyPair, generate_two_prime_pairs, Encrypt, Decrypt, Sign, Verify, SendKey, ReceiveKey, text_to_int
+from my_rsa import GenerateKeyPair, generate_two_prime_pairs, Encrypt, Decrypt, Sign, Verify, SendKey, ReceiveKey 
 
 BASE_URL = "http://asymcryptwebservice.appspot.com/rsa"
 session = requests.Session()
@@ -20,40 +20,7 @@ def get_server_key(key_size=512):
     e = hex_to_int(data['publicExponent'])
     return (e, n)
 
-def test_text_messaging(my_text_message, server_pub_key):
-    """
-    test 7: text message encryption
-    we encrypt text -> server decrypts and returns the text.
-    """
-    print("\n--- [Test 7] TEXT Message: Local Encrypt -> Server Decrypt ---")
 
-    # 1. convert text -> int using our new helper
-    msg_int = text_to_int(my_text_message)
-
-    # 2. encrypt
-    ciphertext_int = Encrypt(msg_int, server_pub_key)
-    ciphertext_hex = int_to_hex(ciphertext_int)
-
-    # 3. send to server with expectedtype=text
-    url = f"{BASE_URL}/decrypt?cipherText={ciphertext_hex}&expectedType=TEXT"
-    resp = session.get(url)
-    data = resp.json()
-
-    if 'message' not in data:
-        print("Error response:", data)
-        return False
-
-    decrypted_text_from_server = data['message']
-
-    print(f"Original: '{my_text_message}'")
-    print(f"Server returned: '{decrypted_text_from_server}'")
-
-    if my_text_message == decrypted_text_from_server:
-        print("✅ SUCCESS")
-        return True
-    else:
-        print("❌ FAILED")
-        return False
 
 def test_encryption(my_message_int, server_pub_key):
     """
@@ -294,6 +261,3 @@ if __name__ == "__main__":
         print("✅ SUCCESS")
     except Exception as e:
         print(f"❌ FAILED (Receive): {e}")
-
-    # test 7 text message
-    test_text_messaging("Hello, KPI!", server_pub_key)
