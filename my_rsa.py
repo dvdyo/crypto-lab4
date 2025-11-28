@@ -195,18 +195,3 @@ def ReceiveKey(k1, S1, receiver_priv, sender_pub):
         return k
     else:
         raise ValueError("Authentication Failed: Invalid Signature")
-
-# =============================================================================
-# 4. text utilities (text <-> int)
-# =============================================================================
-
-def text_to_int(text):
-    """converts a string to an integer."""
-    return int.from_bytes(text.encode('utf-8'), 'big')
-
-def int_to_text(number):
-    """converts an integer back to a string."""
-    # we need to calculate number of bytes. 
-    # (number.bit_length() + 7) // 8 calculates the ceiling of division by 8
-    num_bytes = (number.bit_length() + 7) // 8
-    return number.to_bytes(num_bytes, 'big').decode('utf-8')
