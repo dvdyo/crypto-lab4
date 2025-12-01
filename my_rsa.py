@@ -66,17 +66,20 @@ def sieve_of_eratosthenes(limit):
         p += 1
     return [p for p in range(2, limit + 1) if is_prime[p]]
 
-# pre-compute small primes for trial division (optimization)
-# filtering up to 1000 removes ~90% of composites cheaply.
+# pre-compute small primes
+# removes ~90% of composites cheaply
 SMALL_PRIMES = sieve_of_eratosthenes(1000)
 
 def is_probable_prime(n, k=20):
     """miller-rabin primality test."""
-    if n < 2: return False
-    # trial division for speed
+    if n < 2: 
+        return False
+    # crazy optimizations frfr
     for p in SMALL_PRIMES:
-        if n == p: return True
-        if n % p == 0: return False
+        if n == p: 
+            return True
+        if n % p == 0: 
+            return False
 
     # n - 1 = 2^s * d
     s, d = 0, n - 1

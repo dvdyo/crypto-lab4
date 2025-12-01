@@ -1,15 +1,15 @@
 import requests
-from my_rsa import GenerateKeyPair, generate_two_prime_pairs, Encrypt, Decrypt, Sign, Verify, SendKey, ReceiveKey, text_to_int
+from my_rsa import GenerateKeyPair, generate_two_prime_pairs, Encrypt, Decrypt, Sign, Verify, SendKey, ReceiveKey 
 
 BASE_URL = "http://asymcryptwebservice.appspot.com/rsa"
 session = requests.Session()
 
-# Log files
+# logs
 PRIME_LOG_FILE = "prime_candidates.log"
 PROTOCOL_LOG_FILE = "protocol_details.log"
 
 def log_protocol(header, data_dict):
-    """Logs protocol values to a separate file to keep terminal clean."""
+    """Logs protocol values to a separate file."""
     try:
         with open(PROTOCOL_LOG_FILE, "a") as f:
             f.write(f"\n=== {header} ===\n")
@@ -46,11 +46,11 @@ def test_encryption(my_message_int, server_pub_key):
     test 1: local encryption -> server decryption
     """
     print("\n--- [Test 1] Encryption (Local) -> Decryption (Server) ---")
-    # 1. encrypt locally
+    # encrypt locally
     ciphertext_int = Encrypt(my_message_int, server_pub_key)
     ciphertext_hex = int_to_hex(ciphertext_int)
 
-    # 2. send to server for decryption
+    # send to server for decryption
     # server expects 'message' as ciphertext for endpoint /decrypt
     # and expectedtype=bytes (by default, returns hex)
     url = f"{BASE_URL}/decrypt?cipherText={ciphertext_hex}&expectedType=BYTES"
@@ -310,7 +310,7 @@ if __name__ == "__main__":
     # check n <= n1 condition
     if my_pub_key[1] > server_pub_key[1]:
         print("⚠️ WARNING: Local modulus is larger than Server modulus.")
-        print("Protocol SendKey (Local -> Server) might fail if strictly enforced.")
+        print("Protocol SendKey (Local -> Server) will fail. Uh oh!")
         
     # test message
     msg = 123456789
