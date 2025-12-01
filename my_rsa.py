@@ -57,7 +57,7 @@ def is_probable_prime(n, k=20):
     """miller-rabin primality test."""
     if n < 2: 
         return False
-    # trial division for speed
+    # trial division for optimization
     for p in SMALL_PRIMES:
         if n == p: 
             return True
