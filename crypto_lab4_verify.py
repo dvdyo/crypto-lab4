@@ -1,9 +1,23 @@
-# crypto_lab4_verify.py
 import requests
-from my_rsa import GenerateKeyPair, generate_two_prime_pairs, Encrypt, Decrypt, Sign, Verify, SendKey, ReceiveKey 
+from my_rsa import GenerateKeyPair, generate_two_prime_pairs, Encrypt, Decrypt, Sign, Verify, SendKey, ReceiveKey, text_to_int
 
 BASE_URL = "http://asymcryptwebservice.appspot.com/rsa"
 session = requests.Session()
+
+# Log files
+PRIME_LOG_FILE = "prime_candidates.log"
+PROTOCOL_LOG_FILE = "protocol_details.log"
+
+def log_protocol(header, data_dict):
+    """Logs protocol values to a separate file to keep terminal clean."""
+    try:
+        with open(PROTOCOL_LOG_FILE, "a") as f:
+            f.write(f"\n=== {header} ===\n")
+            for key, value in data_dict.items():
+                f.write(f"{key}:\n    {value}\n")
+            f.write("="*40 + "\n")
+    except Exception:
+        pass
 
 def hex_to_int(hex_str):
     return int(hex_str, 16)
@@ -18,6 +32,11 @@ def get_server_key(key_size=512):
     data = resp.json()
     n = hex_to_int(data['modulus'])
     e = hex_to_int(data['publicExponent'])
+    
+    log_protocol("Server Key Obtained", {
+        "Modulus (n)": int_to_hex(n),
+        "Public Exponent (e)": int_to_hex(e)
+    })
     return (e, n)
 
 
@@ -51,6 +70,13 @@ def test_encryption(my_message_int, server_pub_key):
 
     print(f"Original (Int): {my_message_int}")
     print(f"Decrypted(Int): {decrypted_int}")
+    
+    log_protocol("Test 1: Encryption (Local -> Server)", {
+        "Original": my_message_int,
+        "Ciphertext (Hex)": ciphertext_hex,
+        "Decrypted (Hex)": decrypted_hex,
+        "Decrypted (Int)": decrypted_int
+    })
 
     if my_message_int == decrypted_int:
         print("✅ SUCCESS")
@@ -80,6 +106,12 @@ def test_decryption(my_message_int, my_pub_key, my_priv_key):
 
     print(f"Original (Int): {my_message_int}")
     print(f"Decrypted(Int): {decrypted_int}")
+    
+    log_protocol("Test 2: Decryption (Server -> Local)", {
+        "Original": my_message_int,
+        "Ciphertext (Hex)": ciphertext_hex,
+        "Decrypted (Int)": decrypted_int
+    })
 
     if my_message_int == decrypted_int:
         print("✅ SUCCESS")
@@ -112,6 +144,12 @@ def test_signature_verify(my_message_int, server_pub_key):
 
     print(f"Signature: {signature_hex[:30]}...")
     print(f"Verified:  {is_valid}")
+    
+    log_protocol("Test 3: Signature (Server -> Local)", {
+        "Message": my_message_int,
+        "Signature (Hex)": signature_hex,
+        "Valid?": is_valid
+    })
 
     if is_valid:
         print("✅ SUCCESS")
@@ -139,6 +177,12 @@ def test_sign_myself(my_message_int, my_pub_key, my_priv_key):
 
     server_says_valid = data['verified']
     print(f"Server says verified: {server_says_valid}")
+    
+    log_protocol("Test 4: Signature (Local -> Server)", {
+        "Message": my_message_int,
+        "Signature (Hex)": signature_hex,
+        "Server Verified?": server_says_valid
+    })
 
     if server_says_valid:
         print("✅ SUCCESS")
@@ -182,6 +226,13 @@ def test_protocol_send(my_priv_key, server_pub_key):
         received_key_int = hex_to_int(received_key_hex)
         print(f"Sent Key:     {k}")
         print(f"Server Recvd: {received_key_int}")
+        
+        log_protocol("Test 5: SendKey (Local -> Server)", {
+            "Session Key (k)": k,
+            "Encrypted Key (k1)": k1_hex,
+            "Encrypted Signature (S1)": S1_hex,
+            "Server Received": received_key_int
+        })
 
         if k == received_key_int:
             print("✅ SUCCESS")
@@ -209,6 +260,11 @@ def test_protocol_receive(my_pub_key, my_priv_key):
 
     k1_int = hex_to_int(k1_hex)
     S1_int = hex_to_int(S1_hex)
+    
+    log_protocol("Test 6: ReceiveKey (Server -> Local)", {
+        "Encrypted Key (k1)": k1_hex,
+        "Encrypted Signature (S1)": S1_hex
+    })
 
     return k1_int, S1_int
 
@@ -217,6 +273,15 @@ def test_protocol_receive(my_pub_key, my_priv_key):
 # main execution
 # -------------------------
 if __name__ == "__main__":
+    # reset the log files for a fresh run
+    with open(PRIME_LOG_FILE, "w") as f:
+        f.write("=== RSA Prime Generation Log ===\n")
+        f.write("This file contains candidates checked during prime generation.\n\n")
+        
+    with open(PROTOCOL_LOG_FILE, "w") as f:
+        f.write("=== RSA Protocol Execution Log ===\n")
+        f.write("This file contains the full keys, signatures, and ciphertexts.\n\n")
+
     print("=== RSA API Verification Tool ===")
     
     # 1. get server key
@@ -228,7 +293,7 @@ if __name__ == "__main__":
         exit(1)
         
     # 2. generate our keys
-    # our modulus (n) should be <= server modulus (n1), my_rsa handles the exception
+    # important: our modulus (n) should be <= server modulus (n1) for the sendkey protocol.
     # since the server provides a 512-bit key, we will generate approximately the same size.
     print("Generating local keys (approx 512 bit modulus)...")
     (p, q), _ = generate_two_prime_pairs(bits=256) # 256*2 = 512 bit modulus
@@ -236,14 +301,21 @@ if __name__ == "__main__":
     my_pub_key, my_priv_key = GenerateKeyPair(p, q)
     print(f"Local Key generated. Modulus length: {my_pub_key[1].bit_length()} bits")
     
+    log_protocol("Local Key Generation", {
+        "Modulus (n)": int_to_hex(my_pub_key[1]),
+        "Public Exponent (e)": int_to_hex(my_pub_key[0]),
+        "Private Exponent (d)": int_to_hex(my_priv_key[0])
+    })
+    
     # check n <= n1 condition
     if my_pub_key[1] > server_pub_key[1]:
         print("⚠️ WARNING: Local modulus is larger than Server modulus.")
         print("Protocol SendKey (Local -> Server) might fail if strictly enforced.")
         
-    # test message aka symmetric key
+    # test message
     msg = 123456789
     
+    # run tests
     test_encryption(msg, server_pub_key)
     test_decryption(msg, my_pub_key, my_priv_key)
     test_signature_verify(msg, server_pub_key)
@@ -254,9 +326,16 @@ if __name__ == "__main__":
     try:
         k1, S1 = test_protocol_receive(my_pub_key, my_priv_key)
         # receivekey(k1, s1, receiver_private_key, sender_public_key)
-        # we are receiver. server is sender
+        # we are receiver. server is sender.
         k_received = ReceiveKey(k1, S1, my_priv_key, server_pub_key)
         print(f"Server sent key: {k_received}")
+        
+        log_protocol("Test 6 Result", {
+            "Decrypted Key": k_received
+        })
+        
         print("✅ SUCCESS")
     except Exception as e:
         print(f"❌ FAILED (Receive): {e}")
+
+

@@ -2,7 +2,23 @@ import random
 import math
 
 # =============================================================================
-# 1. math helpers 
+# 0. logging helpers (report requirement)
+# =============================================================================
+
+PRIME_LOG_FILE = "prime_candidates.log"
+
+def log_candidate(name, number, result, reason=""):
+    """logs candidate numbers to a file for the lab report."""
+    try:
+        with open(PRIME_LOG_FILE, "a") as f:
+            f.write(f"[{name}] Testing: {number}\n")
+            f.write(f"    Result: {result} {reason}\n")
+            f.write("-" * 40 + "\n")
+    except Exception:
+        pass 
+
+# =============================================================================
+# 1. math helpers (the "engine")
 # =============================================================================
 
 def horner_pow(base, exp, mod):
@@ -50,19 +66,17 @@ def sieve_of_eratosthenes(limit):
         p += 1
     return [p for p in range(2, limit + 1) if is_prime[p]]
 
-# pre-compute small primes for trial division
+# pre-compute small primes for trial division (optimization)
+# filtering up to 1000 removes ~90% of composites cheaply.
 SMALL_PRIMES = sieve_of_eratosthenes(1000)
 
 def is_probable_prime(n, k=20):
     """miller-rabin primality test."""
-    if n < 2: 
-        return False
-    # trial division for optimization
+    if n < 2: return False
+    # trial division for speed
     for p in SMALL_PRIMES:
-        if n == p: 
-            return True
-        if n % p == 0: 
-            return False
+        if n == p: return True
+        if n % p == 0: return False
 
     # n - 1 = 2^s * d
     s, d = 0, n - 1
@@ -87,7 +101,7 @@ def is_probable_prime(n, k=20):
             return False
     return True
 
-def generate_random_prime(bits):
+def generate_random_prime(bits, name="unknown"):
     """generates a prime number of 'bits' length."""
     n0 = 1 << (bits - 1)
     n1 = (1 << bits) - 1
@@ -95,13 +109,15 @@ def generate_random_prime(bits):
     while True:
         x = random.randint(n0, n1)
         # ensure odd
-        if x % 2 == 0: 
-            x += 1
+        if x % 2 == 0: x += 1
         
         # search sequence x, x+2, x+4...
         for m in range(x, n1 + 1, 2):
             if is_probable_prime(m):
+                log_candidate(name, m, "PRIME FOUND", "!!!")
                 return m
+            else:
+                log_candidate(name, m, "COMPOSITE")
         # if we reached end of interval, loop restarts with new random x
 
 def generate_two_prime_pairs(bits=256):
@@ -109,17 +125,23 @@ def generate_two_prime_pairs(bits=256):
     generates two pairs (p,q) and (p1,q1) such that n <= n1.
     """
     while True:
-        p, q = generate_random_prime(bits), generate_random_prime(bits)
-        p1, q1 = generate_random_prime(bits), generate_random_prime(bits)
+        # we pass names 'p', 'q' etc to track them in the log file
+        p = generate_random_prime(bits, "p")
+        q = generate_random_prime(bits, "q")
+        
+        p1 = generate_random_prime(bits, "p1 (server)")
+        q1 = generate_random_prime(bits, "q1 (server)")
         
         n = p * q
         n1 = p1 * q1
         
         if n <= n1:
             return (p, q), (p1, q1)
+        else:
+            log_candidate("SYSTEM", 0, "RETRY", f"n ({n.bit_length()} bits) > n1 ({n1.bit_length()} bits). Regenerating...")
 
 # =============================================================================
-# 3. high-level rsa procedures 
+# 3. high-level rsa procedures (the assignment)
 # =============================================================================
 
 def GenerateKeyPair(p, q):
@@ -195,3 +217,55 @@ def ReceiveKey(k1, S1, receiver_priv, sender_pub):
         return k
     else:
         raise ValueError("Authentication Failed: Invalid Signature")
+
+# =============================================================================
+# 4. text utilities (text <-> int)
+# =============================================================================
+
+def text_to_int(text):
+    """converts a string to an integer."""
+    return int.from_bytes(text.encode('utf-8'), 'big')
+
+def int_to_text(number):
+    """converts an integer back to a string."""
+    # we need to calculate number of bytes. 
+    # (number.bit_length() + 7) // 8 calculates the ceiling of division by 8
+    num_bytes = (number.bit_length() + 7) // 8
+    return number.to_bytes(num_bytes, 'big').decode('utf-8')
+
+# =============================================================================
+# self-check / demo
+# =============================================================================
+if __name__ == "__main__":
+    print("=== RSA Student Lab Demo ===")
+    print("Generating keys (256-bit)...")
+    (p, q), _ = generate_two_prime_pairs(256)
+    pub, priv = GenerateKeyPair(p, q)
+    
+    # example 1: raw integer (the math)
+    print("\n[1] Testing Raw Integer:")
+    msg_int = 123456789
+    cipher_int = Encrypt(msg_int, pub)
+    decrypted_int = Decrypt(cipher_int, priv)
+    print(f"  Original: {msg_int}")
+    print(f"  Decrypted: {decrypted_int}")
+    assert msg_int == decrypted_int
+    
+    # example 2: text message (the app)
+    print("\n[2] Testing Text Message:")
+    message_str = "Hello, RSA!"
+    print(f"  Original Text: '{message_str}'")
+    
+    # convert to int -> encrypt -> decrypt -> convert to text
+    m_int = text_to_int(message_str)
+    print(f"  As Integer:    {m_int}")
+    
+    c_int = Encrypt(m_int, pub)
+    print(f"  Encrypted (C): {c_int}")
+    
+    d_int = Decrypt(c_int, priv)
+    result_str = int_to_text(d_int)
+    print(f"  Decrypted Txt: '{result_str}'")
+    
+    assert message_str == result_str
+    print("\n✅ Demo Success! System works for Ints and Strings.")
