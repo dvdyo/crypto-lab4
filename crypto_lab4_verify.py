@@ -293,7 +293,7 @@ if __name__ == "__main__":
         exit(1)
         
     # 2. generate our keys
-    # important: our modulus (n) should be <= server modulus (n1) for the sendkey protocol.
+    # our modulus (n) should be <= server modulus (n1) for the sendkey protocol
     # since the server provides a 512-bit key, we will generate approximately the same size.
     print("Generating local keys (approx 512 bit modulus)...")
     (p, q), _ = generate_two_prime_pairs(bits=256) # 256*2 = 512 bit modulus
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     try:
         k1, S1 = test_protocol_receive(my_pub_key, my_priv_key)
         # receivekey(k1, s1, receiver_private_key, sender_public_key)
-        # we are receiver. server is sender.
+        # we are receiver. server is sender
         k_received = ReceiveKey(k1, S1, my_priv_key, server_pub_key)
         print(f"Server sent key: {k_received}")
         

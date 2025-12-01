@@ -112,7 +112,8 @@ def generate_random_prime(bits, name="unknown"):
     while True:
         x = random.randint(n0, n1)
         # ensure odd
-        if x % 2 == 0: x += 1
+        if x % 2 == 0: 
+            x += 1
         
         # search sequence x, x+2, x+4...
         for m in range(x, n1 + 1, 2):
@@ -132,8 +133,8 @@ def generate_two_prime_pairs(bits=256):
         p = generate_random_prime(bits, "p")
         q = generate_random_prime(bits, "q")
         
-        p1 = generate_random_prime(bits, "p1 (server)")
-        q1 = generate_random_prime(bits, "q1 (server)")
+        p1 = generate_random_prime(bits, "p1 (for demo)")
+        q1 = generate_random_prime(bits, "q1 (for demo)")
         
         n = p * q
         n1 = p1 * q1
@@ -240,7 +241,7 @@ def int_to_text(number):
 # self-check / demo
 # =============================================================================
 if __name__ == "__main__":
-    print("=== RSA Student Lab Demo ===")
+    print("=== RSA Lab Demo ===")
     print("Generating keys (256-bit)...")
     (p, q), _ = generate_two_prime_pairs(256)
     pub, priv = GenerateKeyPair(p, q)
