@@ -232,8 +232,6 @@ def text_to_int(text):
 
 def int_to_text(number):
     """converts an integer back to a string."""
-    # we need to calculate number of bytes. 
-    # (number.bit_length() + 7) // 8 calculates the ceiling of division by 8
     num_bytes = (number.bit_length() + 7) // 8
     return number.to_bytes(num_bytes, 'big').decode('utf-8')
 
@@ -246,7 +244,6 @@ if __name__ == "__main__":
     (p, q), _ = generate_two_prime_pairs(256)
     pub, priv = GenerateKeyPair(p, q)
     
-    # example 1: raw integer (the math)
     print("\n[1] Testing Raw Integer:")
     msg_int = 123456789
     cipher_int = Encrypt(msg_int, pub)
@@ -255,12 +252,10 @@ if __name__ == "__main__":
     print(f"  Decrypted: {decrypted_int}")
     assert msg_int == decrypted_int
     
-    # example 2: text message (the app)
     print("\n[2] Testing Text Message:")
     message_str = "Hello, RSA!"
     print(f"  Original Text: '{message_str}'")
     
-    # convert to int -> encrypt -> decrypt -> convert to text
     m_int = text_to_int(message_str)
     print(f"  As Integer:    {m_int}")
     
